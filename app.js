@@ -3795,6 +3795,7 @@ app.listen(port, () => {
       logger.info('Bot telah dimulai');
   }).catch((error) => {
       logger.error('Error saat memulai bot:', error);
+      process.exit(1);
   });
   logger.info(`Server berjalan di port ${port}`);
 });
