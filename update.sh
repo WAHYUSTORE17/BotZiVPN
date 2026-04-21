@@ -26,22 +26,22 @@ npm install -g pm2
     if [ -n "$(ls -A /root/BotZiVPN)" ]; then
         chmod +x /root/BotZiVPN/*
     fi
- wget --connect-timeout=1 --timeout=30 -O .gitattributes "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/.gitattributes"
- wget --connect-timeout=1 --timeout=30 -O README.md "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/README.md"
- wget --connect-timeout=1 --timeout=30 -O app.js "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/app.js"
- wget --connect-timeout=1 --timeout=30 -O wd.py "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/wd.py"
- wget --connect-timeout=1 --timeout=30 -O cek-port.sh "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/cek-port.sh"
- wget --connect-timeout=1 --timeout=30 -O ecosystem.config.js "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/ecosystem.config.js"
- wget --connect-timeout=1 --timeout=30 -O package.json "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/package.json"
- wget --connect-timeout=1 --timeout=30 -O ss.png "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/ss.png"
- wget --connect-timeout=1 --timeout=30 -O ss2.png "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/ss2.png"
- wget --connect-timeout=1 --timeout=30 -O start "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/start"
- wget --connect-timeout=1 --timeout=30 -O update.sh "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/update.sh"
- wget --connect-timeout=1 --timeout=30 -O /root/BotZiVPN/modules/reseller.js "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/modules/reseller.js"
- wget --connect-timeout=1 --timeout=30 -O /root/BotZiVPN/modules/create.js "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/modules/create.js"
- wget --connect-timeout=1 --timeout=30 -O /root/BotZiVPN/modules/del.js "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/modules/del.js"
- wget --connect-timeout=1 --timeout=30 -O /root/BotZiVPN/modules/renew.js "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/modules/renew.js"
- wget --connect-timeout=1 --timeout=30 -O /root/BotZiVPN/modules/trial.js "https://raw.githubusercontent.com/arivpnstores/BotZiVPN/main/modules/trial.js"
+ wget --connect-timeout=1 --timeout=30 -O .gitattributes "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/.gitattributes"
+ wget --connect-timeout=1 --timeout=30 -O README.md "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/README.md"
+ wget --connect-timeout=1 --timeout=30 -O app.js "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/app.js"
+ wget --connect-timeout=1 --timeout=30 -O wd.py "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/wd.py"
+ wget --connect-timeout=1 --timeout=30 -O cek-port.sh "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/cek-port.sh"
+ wget --connect-timeout=1 --timeout=30 -O ecosystem.config.js "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/ecosystem.config.js"
+ wget --connect-timeout=1 --timeout=30 -O package.json "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/package.json"
+ wget --connect-timeout=1 --timeout=30 -O ss.png "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/ss.png"
+ wget --connect-timeout=1 --timeout=30 -O ss2.png "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/ss2.png"
+ wget --connect-timeout=1 --timeout=30 -O start "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/start"
+ wget --connect-timeout=1 --timeout=30 -O update.sh "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/update.sh"
+ wget --connect-timeout=1 --timeout=30 -O /root/BotZiVPN/modules/reseller.js "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/modules/reseller.js"
+ wget --connect-timeout=1 --timeout=30 -O /root/BotZiVPN/modules/create.js "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/modules/create.js"
+ wget --connect-timeout=1 --timeout=30 -O /root/BotZiVPN/modules/del.js "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/modules/del.js"
+ wget --connect-timeout=1 --timeout=30 -O /root/BotZiVPN/modules/renew.js "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/modules/renew.js"
+ wget --connect-timeout=1 --timeout=30 -O /root/BotZiVPN/modules/trial.js "https://raw.githubusercontent.com/WAHYUSTORE17/BotZiVPN/main/modules/trial.js"
 
 # stop dulu servicenya
 systemctl stop sellzivpn.service
