@@ -147,12 +147,24 @@ db.run(`CREATE TABLE IF NOT EXISTS pending_deposits (
   original_amount INTEGER,
   timestamp INTEGER,
   status TEXT,
-  qr_message_id INTEGER
+  qr_message_id INTEGER,
+  provider_ref TEXT
 )`, (err) => {
   if (err) {
     logger.error('Kesalahan membuat tabel pending_deposits:', err.message);
   }
 });
+
+db.run(
+  `ALTER TABLE pending_deposits ADD COLUMN provider_ref TEXT`,
+  (err) => {
+    if (err && !err.message.includes('duplicate column')) {
+      logger.error('Gagal menambahkan kolom provider_ref:', err.message);
+    } else if (!err) {
+      logger.info('Kolom provider_ref berhasil ditambahkan');
+    }
+  }
+);
 
 db.run(`CREATE TABLE IF NOT EXISTS Server (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1451,7 +1463,7 @@ async function startSelectServer(ctx, action, type, page = 0) {
         const aFull = a.total_create_akun >= a.batas_create_akun ? 1 : 0;
         const bFull = b.total_create_akun >= b.batas_create_akun ? 1 : 0;
         if (aFull !== bFull) return aFull - bFull; // server penuh terakhir
-        return a.nama_server.localeCompare(b.nama_server); // urut alfabet kalau status sama
+        return b.nama_server.localeCompare(a.nama_server); // Z KE A
       });
 
       logger.info(`User ${ctx.from.id} melihat ${filteredServers.length} server dari ${servers.length} total`);
@@ -3341,7 +3353,9 @@ db.all('SELECT * FROM pending_deposits WHERE status = "pending"', [], (err, rows
       userId: row.user_id,
       timestamp: row.timestamp,
       status: row.status,
-      qrMessageId: row.qr_message_id
+      qrMessageId: row.qr_message_id,
+      providerRef: row.provider_ref,
+      transactionId: row.provider_ref
     };
   });
   logger.info('Pending deposit loaded:', Object.keys(global.pendingDeposits).length);
@@ -3349,6 +3363,84 @@ db.all('SELECT * FROM pending_deposits WHERE status = "pending"', [], (err, rows
 
 function generateRandomNumber(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function normalizeMoney(value) {
+  return Number(String(value ?? '').replace(/[^\d]/g, '')) || 0;
+}
+
+function toComparableString(value) {
+  return String(value ?? '').trim();
+}
+
+function parseTransactionTimestamp(tx) {
+  const candidates = [
+    tx?.timestamp,
+    tx?.created_at,
+    tx?.updated_at,
+    tx?.date,
+    tx?.datetime,
+    tx?.tanggal,
+    tx?.waktu,
+    tx?.jam,
+    tx?.trx_date,
+    tx?.transaction_time
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate === null || candidate === undefined) continue;
+
+    if (typeof candidate === 'number') {
+      const numeric = candidate > 1e12 ? candidate : candidate * 1000;
+      if (Number.isFinite(numeric)) return numeric;
+    }
+
+    const raw = String(candidate).trim();
+    if (!raw) continue;
+
+    if (/^\d+$/.test(raw)) {
+      const numeric = Number(raw);
+      const ts = numeric > 1e12 ? numeric : numeric * 1000;
+      if (Number.isFinite(ts)) return ts;
+    }
+
+    const normalized = raw.replace(' WIB', '').replace(/\//g, '-');
+    const parsed = Date.parse(normalized);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+
+  return null;
+}
+
+function isFreshTransactionForDeposit(tx, depositTimestamp) {
+  const txTimestamp = parseTransactionTimestamp(tx);
+  if (!txTimestamp) return false;
+
+  const toleranceBefore = 10 * 60 * 1000;
+  const toleranceAfter = 10 * 60 * 1000;
+  return txTimestamp >= (depositTimestamp - toleranceBefore) && txTimestamp <= (Date.now() + toleranceAfter);
+}
+
+function buildProviderTransactionRef(tx, fallbackRef) {
+  const explicitRef = [
+    tx?.reference_id,
+    tx?.reference,
+    tx?.transaction_id,
+    tx?.trx_id,
+    tx?.id
+  ].map(toComparableString).find(Boolean);
+
+  if (explicitRef) return explicitRef;
+
+  const rawTimestamp = parseTransactionTimestamp(tx) || 'no-ts';
+  const parts = [
+    normalizeMoney(tx?.kredit || tx?.amount || tx?.jumlah),
+    toComparableString(tx?.status).toUpperCase(),
+    rawTimestamp,
+    toComparableString(tx?.keterangan || tx?.description || tx?.note || tx?.issuer_reff || tx?.issuer_ref)
+  ];
+
+  return `fallback-${parts.join('|') || fallbackRef}`;
 }
 
 // ============================
@@ -3401,7 +3493,7 @@ async function processDeposit(ctx, amount) {
       adminFee = 0;
 
       const res = await axios.post(
-        "https://api-gopay.sawargipay.cloud/qris/generate",
+        "https://v1-gateway.autogopay.site/qris/generate",
         { amount: finalAmount },
         {
           headers: {
@@ -3513,7 +3605,8 @@ async function processDeposit(ctx, amount) {
       timestamp: Date.now(),
       status: 'pending',
       qrMessageId: qrMessage?.message_id,
-      transactionId
+      transactionId,
+      providerRef: transactionId || null
     };
 
     // ======================
@@ -3521,8 +3614,8 @@ async function processDeposit(ctx, amount) {
     // ======================
     db.run(
       `INSERT INTO pending_deposits 
-      (unique_code, user_id, amount, original_amount, timestamp, status, qr_message_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      (unique_code, user_id, amount, original_amount, timestamp, status, qr_message_id, provider_ref)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         uniqueCode,
         userId,
@@ -3530,7 +3623,8 @@ async function processDeposit(ctx, amount) {
         Number(amount),
         Date.now(),
         'pending',
-        qrMessage?.message_id
+        qrMessage?.message_id,
+        transactionId || null
       ]
     );
 
@@ -3573,8 +3667,8 @@ async function checkQRISStatus() {
       if (vars.PAYMENT === "GOPAY") {
         // Cek status via API GoPay
         const res = await axios.post(
-          "https://api-gopay.sawargipay.cloud/qris/status",
-          { transaction_id: deposit.transactionId },
+          "https://v1-gateway.autogopay.site/qris/status",
+          { transaction_id: deposit.transactionId || deposit.providerRef },
           {
             headers: {
               "Content-Type": "application/json",
@@ -3625,17 +3719,31 @@ async function checkQRISStatus() {
         }
 
         const list = data.qris_history.results;
-        const normalize = v => Number(String(v || '').replace(/[^\d]/g, '')) || 0;
-        const targetAmount = normalize(deposit.amount);
+        const targetAmount = normalizeMoney(deposit.amount);
+        const providerRef = toComparableString(deposit.providerRef);
 
-        const match = list.find(tx => {
-          const kredit = normalize(tx.kredit);
-          const status = String(tx.status || '').toUpperCase();
+        const candidates = list.filter(tx => {
+          const kredit = normalizeMoney(tx.kredit || tx.amount || tx.jumlah);
+          const status = toComparableString(tx.status).toUpperCase();
           return kredit === targetAmount && status === 'IN';
         });
 
+        const matchByReference = providerRef
+          ? candidates.find(tx => buildProviderTransactionRef(tx, uniqueCode) === providerRef)
+          : null;
+
+        const freshCandidates = candidates
+          .filter(tx => isFreshTransactionForDeposit(tx, deposit.timestamp))
+          .sort((a, b) => (parseTransactionTimestamp(b) || 0) - (parseTransactionTimestamp(a) || 0));
+
+        const match = matchByReference || freshCandidates[0];
+
         if (!match) {
-          logger.info(`[QRIS] Belum match ${uniqueCode}`);
+          if (candidates.length > 0) {
+            logger.warn(`[QRIS] Ada nominal cocok tapi timestamp/reference tidak aman ${uniqueCode}`);
+          } else {
+            logger.info(`[QRIS] Belum match ${uniqueCode}`);
+          }
           continue;
         }
 
@@ -3750,14 +3858,18 @@ async function sendPaymentSuccessNotification(userId, deposit, currentBalance) {
 }
 
 async function processMatchingPayment(deposit, matchingTransaction, uniqueCode) {
-  const transactionKey = `${matchingTransaction.reference_id || uniqueCode}_${matchingTransaction.amount}`;
+  const providerReference = buildProviderTransactionRef(
+    matchingTransaction,
+    deposit.providerRef || uniqueCode
+  );
+  const transactionKey = providerReference;
   // Use a database transaction to ensure atomicity
   return new Promise((resolve, reject) => {
     db.serialize(() => {
       db.run('BEGIN TRANSACTION');
       // First check if transaction was already processed
-      db.get('SELECT id FROM transactions WHERE reference_id = ? AND amount = ?', 
-        [matchingTransaction.reference_id || uniqueCode, matchingTransaction.amount], 
+      db.get('SELECT id FROM transactions WHERE reference_id = ?', 
+        [providerReference], 
         (err, row) => {
           if (err) {
             db.run('ROLLBACK');
@@ -3784,7 +3896,7 @@ async function processMatchingPayment(deposit, matchingTransaction, uniqueCode) 
     // Record the transaction
       db.run(
                 'INSERT INTO transactions (user_id, amount, type, reference_id, timestamp) VALUES (?, ?, ?, ?, ?)',
-                [deposit.userId, deposit.originalAmount, 'deposit', matchingTransaction.reference_id || uniqueCode, Date.now()],
+                [deposit.userId, deposit.originalAmount, 'deposit', providerReference, Date.now()],
         (err) => {
                   if (err) {
                     db.run('ROLLBACK');
