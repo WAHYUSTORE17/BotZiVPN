@@ -391,8 +391,8 @@ Status: <code>${statusReseller}</code>
 • 🔑 Menu Admin   : /admin
 • 🛡️ Admin Panel  : /helpadmin
 
-👨‍💻 <b>Pembuat:</b> @ARI_VPN_STORE
-🛠️ <b>Credit:</b> ARI STORE × API POTATO
+👨‍💻 <b>Pembuat:</b> @Wahyu_Store
+🛠️ <b>Credit:</b> WAHYU STORE × API POTATO
 🔧 <b>Base:</b> FighterTunnel
 👥 <b>Pengguna BOT:</b> ${jumlahPengguna}
 ⏱️ <b>Latency:</b> ${latency} ms
