@@ -391,7 +391,7 @@ Status: <code>${statusReseller}</code>
 • 🔑 Menu Admin   : /admin
 • 🛡️ Admin Panel  : /helpadmin
 
-👨‍💻 <b>Pembuat:</b> @Wahyu_Store
+👨‍💻 <b>Pembuat:</b> @WahyuProject17
 🛠️ <b>Credit:</b> WAHYU STORE × API POTATO
 🔧 <b>Base:</b> FighterTunnel
 👥 <b>Pengguna BOT:</b> ${jumlahPengguna}
